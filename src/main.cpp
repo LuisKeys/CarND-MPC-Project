@@ -77,7 +77,7 @@ int main() {
     // The 4 signifies a websocket message
     // The 2 signifies a websocket event
     string sdata = string(data).substr(0, length);
-    cout << sdata << endl;
+    //cout << sdata << endl;
     if (sdata.size() > 2 && sdata[0] == '4' && sdata[1] == '2') {
       string s = hasData(sdata);
       if (s != "") {
@@ -125,14 +125,18 @@ int main() {
           double cte = polyeval(coeffs, 0);
           double epsi = -atan(coeffs[1]);
 
-
+          // State after delay.
+          double latency = 0.100; //Latency in seconds
+          double v_predic = v;
+          double cte_predic = cte + (v * sin(epsi) * latency);
+          double epsi_predic = epsi - (v * atan(coeffs[1]) * latency / mpc.GetLf());
           Eigen::VectorXd state(6);
           state[0] = 0; //x referenced from car so it is 0
           state[1] = 0; //y referenced from car so it is 0
           state[2] = 0; //psi referenced from car so it is 0
-          state[3] = v;
-          state[4] = cte;
-          state[5] = epsi;
+          state[3] = v_predic;
+          state[4] = cte_predic;
+          state[5] = epsi_predic;
 
           vector<double> solved_values = mpc.Solve(state, coeffs);
           steer_value = solved_values[0];
@@ -141,7 +145,7 @@ int main() {
           json msgJson;
           // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
           // Otherwise the values will be in between [-deg2rad(25), deg2rad(25] instead of [-1, 1].
-          msgJson["steering_angle"] = steer_value / deg2rad(25);
+          msgJson["steering_angle"] = -steer_value / deg2rad(25);
           msgJson["throttle"] = throttle_value;
 
           //Display the MPC predicted trajectory 
@@ -178,7 +182,7 @@ int main() {
 
 
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
-          std::cout << msg << std::endl;
+          //std::cout << msg << std::endl;
           // Latency
           // The purpose is to mimic real driving conditions where
           // the car does actuate the commands instantly.

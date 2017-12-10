@@ -10,6 +10,8 @@ class MPC {
  public:
   MPC();
 
+  double GetLf();
+
   virtual ~MPC();
 
   // Solve the model given an initial state and polynomial coefficients.
