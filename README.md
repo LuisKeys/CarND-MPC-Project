@@ -102,8 +102,8 @@ Then fitted the points to a third order polygon as follows:
 
 4) Model Predictive Control with Latency
 
-Finally latency was included in the model (100 ms) with a simple predictive
-model for 2 of the 3 variables, as follows (note that I assumed that the velocity 
+Finally latency was included in the model (10 ms) with a simple predictive
+model for all the variables, as follows (note that I assumed that the velocity 
 is constant, which is not true, but for such an small perdio of time is a good 
 approximation and simplify the model without considering the acceleration 
 which may be calculated as an approx function of throttle position):
@@ -131,7 +131,7 @@ which may be calculated as an approx function of throttle position):
     state[3] = v_predic;
 
     state[4] = cte_predic;
-    
+
     state[5] = epsi_predic;
 
 ---
