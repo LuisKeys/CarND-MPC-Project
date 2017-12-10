@@ -1,6 +1,119 @@
 # CarND-Controls-MPC
 Self-Driving Car Engineer Nanodegree Program
 
+## Model description:
+1) The model
+MPC is based on predicting the car position in the next second or so,
+comparing the predictied path with a waypoints based path 
+(calculated based on location and path planing) and using a cost function 
+to penalize different variables involved in the model. A library (cppad) is used to 
+minimize this cost function (local minimums for non linear function problem),
+a similar concept that is being used in Machine Learning to train algorithms.
+The following terms were added to the cost function in the selected model:
+a) CTE
+b) PSI error
+c) Velocity
+d) steering actuator
+e) throttle actuator
+f) The product of steering actuator and speed
+g) steering actuator differential
+h) throttle actuator differential
+
+The cost function is a simple addition of squares of the parameters (as CTE for example)
+multiplied by a coefficient as follows:
+
+
+    // Initialize fg[0] to 0, where the cost value will be stored
+    fg[0] = 0;
+    // Contribution to Cost based on ref state
+    for (uint t = 0; t < N; t++) {
+      fg[0] += cte_coeff * CppAD::pow(vars[cte_start + t], 2);
+      fg[0] += epsi_coeff * CppAD::pow(vars[epsi_start + t], 2);
+      fg[0] += v_coeff * CppAD::pow(vars[v_start + t] - ref_v, 2);
+    }    
+
+    // Minimize the use of actuators.
+    for (uint t = 0; t < N - 1; t++) {
+      fg[0] += delta_coeff * CppAD::pow(vars[delta_start + t], 2);
+      fg[0] += alpha_coeff * CppAD::pow(vars[alpha_start + t], 2);
+      fg[0] += delta_coeff * alpha_coeff *CppAD::pow(vars[delta_start + t] * vars[v_start + t], 2);
+    }
+
+    // Minimize the value gap between sequential actuations.
+    for (uint t = 0; t < N - 2; t++) {
+      fg[0] += diff_delta_coeff * CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2);
+      fg[0] += diff_alpha_coeff * CppAD::pow(vars[alpha_start + t + 1] - vars[alpha_start + t], 2);
+    }
+
+The beauty of the cost function is its simplicity of implementation.
+
+The following coefficients were defined (and tuned) to make the 
+cost function more sensible (penalizing more) certain terms over others:
+
+ // Cost coefficients
+    double cte_coeff = 2000.0;
+    double epsi_coeff = 350.0;
+    double v_coeff = 4.0;
+    double delta_coeff = 15.0;
+    double alpha_coeff = 100.0;
+    double diff_delta_coeff = 1000.0;
+    double diff_alpha_coeff = 10.0;
+
+2) Timestep Length and Elapsed Duration (N & dt)
+
+Initially a big delta and small N was selected thinking on performance, 
+but the model was quite unestable, and din't work at all. Then I tried 
+with the opposite, and tiny dt and a large number of steps and it worked
+but I noticed that increasing the dt a bit (twice the value) 
+and decreasing N to a half the result was the same, and the model was less
+expensive in terms of proccessing (the library needs to calculate all the permutations
+of the N values, hence large valules may be completelly not good at alls in terms of performance).
+
+Finally I seleted the following values:
+size_t N = 20;
+double dt = 0.04;
+
+3) Polynomial Fitting and MPC Preprocessing
+Regarding the preprocessing I simply transformed the wayponts world based coordinates 
+to car origin, in order to simplify all the calculations as follows:
+
+  // Reference waypoints to car origin
+  int num_waypts = ptsx.size();
+  auto ptsx_transf = Eigen::VectorXd(num_waypts);
+  auto ptsy_transf = Eigen::VectorXd(num_waypts);
+  for (uint i = 0; i < ptsx.size(); i++) {
+    x_car_ref = ptsx[i] - px;
+    y_car_ref = ptsy[i] - py;
+    cos_min_psi = cos(-psi);
+    sin_min_psi = sin(-psi);
+    ptsx_transf[i] = x_car_ref * cos_min_psi - y_car_ref * sin_min_psi;
+    ptsy_transf[i] = x_car_ref * sin_min_psi + y_car_ref * cos_min_psi;
+  }
+
+Then fitted the points to a third order polygon as follows:
+
+    Eigen::VectorXd coeffs = polyfit(ptsx_transf, ptsy_transf, 3);
+
+4) Model Predictive Control with Latency
+
+Finally latency was included in the model (100 ms) with a simple predictive
+model for 2 of the 3 variables, as follows (note that I assumed that the velocity 
+is constant, which is not true, but for such an small perdio of time is a good 
+approximation and simplify the model without considering the acceleration 
+which may be calculated as an approx function of throttle position):
+
+  double latency = 0.100; //Latency in seconds
+  double v_predic = v;
+  double cte_predic = cte + (v * sin(epsi) * latency);
+  double epsi_predic = epsi - (v * atan(coeffs[1]) * latency / mpc.GetLf());
+  Eigen::VectorXd state(6);
+  state[0] = 0; //x referenced from car so it is 0
+  state[1] = 0; //y referenced from car so it is 0
+  state[2] = 0; //psi referenced from car so it is 0
+  state[3] = v_predic;
+  state[4] = cte_predic;
+  state[5] = epsi_predic;
+
 ---
 
 ## Dependencies
