@@ -8,10 +8,10 @@ using CppAD::AD;
 # define PI           3.14159265358979323846  /* pi */
 
 // TODO: Set the timestep length and duration
-size_t N = 20;
-double dt = 0.04;
-double delta_ang_amp = 30.0;
-double ref_v = 40;
+size_t N = 30;
+double dt = 0.08;
+double delta_ang_amp = 25.0;
+double ref_v = 25;
 
 //Vars offset values for different state and control values
 int x_start = 0; // Position x offset
@@ -53,13 +53,13 @@ class FG_eval {
     // the Solver function below.
 
     // Cost coefficients
-    double cte_coeff = 2000.0;
-    double epsi_coeff = 350.0;
-    double v_coeff = 4.0;
-    double delta_coeff = 15.0;
-    double alpha_coeff = 100.0;
-    double diff_delta_coeff = 1000.0;
-    double diff_alpha_coeff = 10.0;
+    const double cte_coeff = 400.0;
+    const double epsi_coeff = 400.0;
+    const double v_coeff = 4.0;
+    const double delta_coeff = 15.0;
+    const double alpha_coeff = 80.0;
+    const double diff_delta_coeff = 1000.0;
+    const double diff_alpha_coeff = 10.0;
 
     // Initialize fg[0] to 0, where the cost value will be stored
     fg[0] = 0;
@@ -114,8 +114,8 @@ class FG_eval {
       AD<double> delta0 = vars[delta_start + t_prev];
       AD<double> a0 = vars[alpha_start + t_prev];
 
-      AD<double> f0 = coeffs[0] + coeffs[1] * x0;
-      AD<double> psides0 = CppAD::atan(coeffs[1]);
+      AD<double> f0 = coeffs[0] + coeffs[1] * x0 + coeffs[2] * CppAD::pow(x0, 2) + coeffs[3] * CppAD::pow(x0, 3);
+      AD<double> psides0 = CppAD::atan(coeffs[1] + 2 * coeffs[2] * x0 + 3 * coeffs[3] * CppAD::pow(x0, 2));      
 
       // Model equations:
       // x_[t] = x[t-1] + v[t-1] * cos(psi[t-1]) * dt

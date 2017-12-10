@@ -65,6 +65,28 @@ Eigen::VectorXd polyfit(Eigen::VectorXd xvals, Eigen::VectorXd yvals,
   return result;
 }
 
+
+Eigen::MatrixXd transfToLocalCoord(vector<double> ptsx, vector<double> ptsy, double px, double py, double psi) {
+
+    double x_car_ref = 0.0;
+    double y_car_ref = 0.0;
+    double cos_min_psi = 0.0;
+    double sin_min_psi = 0.0;
+    uint num_pts = ptsx.size();
+    auto pts_transf = Eigen::MatrixXd(2, num_pts);
+
+    for (uint i = 0; i < num_pts; i++) {
+      x_car_ref = ptsx[i] - px;
+      y_car_ref = ptsy[i] - py;
+      cos_min_psi = cos(-psi);
+      sin_min_psi = sin(-psi);
+      pts_transf(0, i) = x_car_ref * cos_min_psi - y_car_ref * sin_min_psi;
+      pts_transf(1, i) = x_car_ref * sin_min_psi + y_car_ref * cos_min_psi;
+    }
+
+    return pts_transf;
+}
+
 int main() {
   uWS::Hub h;
 
@@ -91,6 +113,8 @@ int main() {
           double py = j[1]["y"];
           double psi = j[1]["psi"];
           double v = j[1]["speed"];
+          //Convert speed from mph to m/s
+          v *= 0.44704;
           double steer_value = j[1]["steering_angle"];
           double throttle_value = j[1]["throttle"];
 
@@ -100,40 +124,29 @@ int main() {
           * Both are in between [-1, 1].
           *
           */
-          vector<double> waypts_x;
-          vector<double> waypts_y;
-
-          double x_car_ref = 0.0;
-          double y_car_ref = 0.0;
-          double cos_min_psi = 0.0;
-          double sin_min_psi = 0.0;
-
           // Reference waypoints to car origin
-          int num_waypts = ptsx.size();
-          auto ptsx_transf = Eigen::VectorXd(num_waypts);
-          auto ptsy_transf = Eigen::VectorXd(num_waypts);
-          for (uint i = 0; i < ptsx.size(); i++) {
-            x_car_ref = ptsx[i] - px;
-            y_car_ref = ptsy[i] - py;
-            cos_min_psi = cos(-psi);
-            sin_min_psi = sin(-psi);
-            ptsx_transf[i] = x_car_ref * cos_min_psi - y_car_ref * sin_min_psi;
-            ptsy_transf[i] = x_car_ref * sin_min_psi + y_car_ref * cos_min_psi;
-          }
+          auto pts_transf = transfToLocalCoord(ptsx, ptsy, px, py, psi);
+          auto ptsx_transf = pts_transf.row(0);
+          auto ptsy_transf = pts_transf.row(1);
 
           Eigen::VectorXd coeffs = polyfit(ptsx_transf, ptsy_transf, 3);
           double cte = polyeval(coeffs, 0);
           double epsi = -atan(coeffs[1]);
 
-          // State after delay.
+          // State of all variables after actuators delay
           double latency = 0.100; //Latency in seconds
+          double predic_coeff = 0.400; //Prediction coeff
+
+          double x_predic = v * cos(psi) * latency * predic_coeff;
+          double y_predic = v * sin(psi) * latency * predic_coeff;
+          double psi_predic = v * steer_value * latency / mpc.GetLf() * predic_coeff;
           double v_predic = v;
           double cte_predic = cte + (v * sin(epsi) * latency);
           double epsi_predic = epsi - (v * atan(coeffs[1]) * latency / mpc.GetLf());
           Eigen::VectorXd state(6);
-          state[0] = 0; //x referenced from car so it is 0
-          state[1] = 0; //y referenced from car so it is 0
-          state[2] = 0; //psi referenced from car so it is 0
+          state[0] = x_predic;
+          state[1] = y_predic;
+          state[2] = psi_predic;
           state[3] = v_predic;
           state[4] = cte_predic;
           state[5] = epsi_predic;
