@@ -52,11 +52,17 @@ cost function more sensible (penalizing more) certain terms over others:
 
  // Cost coefficients
     double cte_coeff = 2000.0;
+
     double epsi_coeff = 350.0;
+
     double v_coeff = 4.0;
+
     double delta_coeff = 15.0;
+
     double alpha_coeff = 100.0;
+
     double diff_delta_coeff = 1000.0;
+
     double diff_alpha_coeff = 10.0;
 
 2) Timestep Length and Elapsed Duration (N & dt)
@@ -102,17 +108,31 @@ is constant, which is not true, but for such an small perdio of time is a good
 approximation and simplify the model without considering the acceleration 
 which may be calculated as an approx function of throttle position):
 
-  double latency = 0.100; //Latency in seconds
-  double v_predic = v;
-  double cte_predic = cte + (v * sin(epsi) * latency);
-  double epsi_predic = epsi - (v * atan(coeffs[1]) * latency / mpc.GetLf());
-  Eigen::VectorXd state(6);
-  state[0] = 0; //x referenced from car so it is 0
-  state[1] = 0; //y referenced from car so it is 0
-  state[2] = 0; //psi referenced from car so it is 0
-  state[3] = v_predic;
-  state[4] = cte_predic;
-  state[5] = epsi_predic;
+    double x_predic = v * cos(psi) * latency;
+
+    double y_predic = v * sin(psi) * latency;
+
+    double psi_predic = v * steer_value * latency / mpc.GetLf();
+
+    double v_predic = v;
+
+    double cte_predic = cte + (v * sin(epsi) * latency);
+
+    double epsi_predic = epsi - (v * atan(coeffs[1]) * latency / mpc.GetLf());
+
+    Eigen::VectorXd state(6);
+
+    state[0] = x_predic;
+
+    state[1] = y_predic;
+
+    state[2] = psi_predic;
+
+    state[3] = v_predic;
+
+    state[4] = cte_predic;
+    
+    state[5] = epsi_predic;
 
 ---
 

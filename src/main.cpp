@@ -134,12 +134,11 @@ int main() {
           double epsi = -atan(coeffs[1]);
 
           // State of all variables after actuators delay
-          double latency = 0.100; //Latency in seconds
-          double predic_coeff = 0.400; //Prediction coeff
+          double latency = 0.0100; //Latency in seconds
 
-          double x_predic = v * cos(psi) * latency * predic_coeff;
-          double y_predic = v * sin(psi) * latency * predic_coeff;
-          double psi_predic = v * steer_value * latency / mpc.GetLf() * predic_coeff;
+          double x_predic = v * cos(psi) * latency;
+          double y_predic = v * sin(psi) * latency;
+          double psi_predic = v * steer_value * latency / mpc.GetLf();
           double v_predic = v;
           double cte_predic = cte + (v * sin(epsi) * latency);
           double epsi_predic = epsi - (v * atan(coeffs[1]) * latency / mpc.GetLf());
