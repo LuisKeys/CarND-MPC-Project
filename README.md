@@ -76,8 +76,8 @@ expensive in terms of proccessing (the library needs to calculate all the permut
 of the N values, hence large valules may be completelly not good at alls in terms of performance).
 
 Finally I seleted the following values:
-size_t N = 20;
-double dt = 0.04;
+size_t N = 30;
+double dt = 0.08;
 
 3) Polynomial Fitting and MPC Preprocessing
 Regarding the preprocessing I simply transformed the wayponts world based coordinates 
