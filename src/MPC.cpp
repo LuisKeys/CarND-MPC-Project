@@ -8,10 +8,10 @@ using CppAD::AD;
 # define PI           3.14159265358979323846  /* pi */
 
 // TODO: Set the timestep length and duration
-size_t N = 30;
-double dt = 0.08;
-double delta_ang_amp = 25.0;
-double ref_v = 25;
+const size_t N = 20;
+const double dt = 0.10;
+const double delta_ang_amp = 25.0;
+const double ref_v_mph = 60.0; // Reference speed in mph
 
 //Vars offset values for different state and control values
 int x_start = 0; // Position x offset
@@ -60,6 +60,8 @@ class FG_eval {
     const double alpha_coeff = 80.0;
     const double diff_delta_coeff = 1000.0;
     const double diff_alpha_coeff = 10.0;
+
+    const double ref_v = 0.44704 * ref_v_mph; // Reference speed in m/s
 
     // Initialize fg[0] to 0, where the cost value will be stored
     fg[0] = 0;

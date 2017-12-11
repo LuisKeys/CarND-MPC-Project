@@ -76,8 +76,8 @@ expensive in terms of proccessing (the library needs to calculate all the permut
 of the N values, hence large valules may be completelly not good at alls in terms of performance).
 
 Finally I seleted the following values:
-size_t N = 30;
-double dt = 0.08;
+const size_t N = 20;
+const double dt = 0.10;
 
 3) Polynomial Fitting and MPC Preprocessing
 Regarding the preprocessing I simply transformed the wayponts world based coordinates 
@@ -108,32 +108,23 @@ is constant, which is not true, but for such an small perdio of time is a good
 approximation and simplify the model without considering the acceleration 
 which may be calculated as an approx function of throttle position):
 
-    double x_predic = v * cos(psi) * latency;
+    // State of all variables after actuators delay
+    double latency = 0.100; //Latency in seconds
 
-    double y_predic = v * sin(psi) * latency;
-
+    double x_predic = v * cos(steer_value) * latency;
+    double y_predic = v * sin(steer_value) * latency;
     double psi_predic = v * steer_value * latency / mpc.GetLf();
-
-    double v_predic = v;
-
+    double v_predic = v + throttle_value * latency;
     double cte_predic = cte + (v * sin(epsi) * latency);
-
     double epsi_predic = epsi - (v * atan(coeffs[1]) * latency / mpc.GetLf());
-
     Eigen::VectorXd state(6);
-
     state[0] = x_predic;
-
     state[1] = y_predic;
-
     state[2] = psi_predic;
-
     state[3] = v_predic;
-
     state[4] = cte_predic;
-
     state[5] = epsi_predic;
-
+    
 ---
 
 ## Dependencies

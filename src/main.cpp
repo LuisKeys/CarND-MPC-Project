@@ -115,7 +115,8 @@ int main() {
           double v = j[1]["speed"];
           //Convert speed from mph to m/s
           v *= 0.44704;
-          double steer_value = j[1]["steering_angle"];
+          double steer_value = j[1]["steering_angle"]; // Turning left is negative sign in simulator but positive yaw for MPC
+          steer_value *= -1; // Turning left is negative sign in simulator but positive yaw for MPC
           double throttle_value = j[1]["throttle"];
 
           /*
@@ -134,12 +135,12 @@ int main() {
           double epsi = -atan(coeffs[1]);
 
           // State of all variables after actuators delay
-          double latency = 0.0100; //Latency in seconds
+          double latency = 0.100; //Latency in seconds
 
-          double x_predic = v * cos(psi) * latency;
-          double y_predic = v * sin(psi) * latency;
+          double x_predic = v * cos(steer_value) * latency;
+          double y_predic = v * sin(steer_value) * latency;
           double psi_predic = v * steer_value * latency / mpc.GetLf();
-          double v_predic = v;
+          double v_predic = v + throttle_value * latency;
           double cte_predic = cte + (v * sin(epsi) * latency);
           double epsi_predic = epsi - (v * atan(coeffs[1]) * latency / mpc.GetLf());
           Eigen::VectorXd state(6);
